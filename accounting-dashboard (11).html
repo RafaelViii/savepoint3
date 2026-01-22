@@ -1,0 +1,3194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accounting Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { margin: 0; background: #f4f6f8; color: #111827; }
+
+    /* Layout */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px;
+      background: #111827;
+      color: #fff;
+      padding: 0;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+    
+    .sidebar-header {
+      padding: 1.5rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .sidebar-header h2 { 
+      text-align: center; 
+      margin: 0; 
+      font-size: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .sidebar nav {
+      padding: 1rem 0;
+      flex: 1;
+    }
+    
+    .sidebar nav a {
+      display: block;
+      padding: 0.6rem 0.8rem;
+      margin: 0 1rem 0.4rem 1rem;
+      border-radius: 8px;
+      color: #d1d5db;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .sidebar nav a.active,
+    .sidebar nav a:hover { background: #1f2933; color: #fff; }
+    
+    /* User Profile Section */
+    .user-profile {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+    }
+    
+    .user-profile-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .user-profile-header:hover {
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .user-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .user-role {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      margin-top: 0.1rem;
+    }
+    
+    .dropdown-icon {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.6);
+      transition: transform 0.2s;
+    }
+    
+    .user-profile-header.open .dropdown-icon {
+      transform: rotate(180deg);
+    }
+    
+    /* User Dropdown */
+    .user-dropdown {
+      display: none;
+      background: #0f172a;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .user-dropdown.open {
+      display: block;
+    }
+    
+    .dropdown-section {
+      padding: 0.75rem;
+    }
+    
+    .dropdown-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.5rem 0.75rem;
+      font-weight: 600;
+    }
+    
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.8);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    
+    .dropdown-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    
+    .dropdown-item.active {
+      background: rgba(99, 179, 237, 0.2);
+      color: white;
+    }
+    
+    .role-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    
+    .role-info {
+      flex: 1;
+    }
+    
+    .role-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .role-desc {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.1rem;
+    }
+    
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 0.5rem 0.75rem;
+    }
+    
+    .logout-icon {
+      font-size: 1.1rem;
+    }
+    
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.2) !important;
+      color: #fca5a5 !important;
+    }
+
+    .main { 
+      flex: 1; 
+      padding: 1rem;
+      margin-left: 220px;
+    }
+
+    /* Inventory Overview Section */
+    .inventory-overview-section {
+      margin-bottom: 2rem;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .period-selector {
+      display: flex;
+      gap: 0.5rem;
+      background: #f3f4f6;
+      padding: 0.25rem;
+      border-radius: 8px;
+    }
+    
+    .period-btn {
+      padding: 0.4rem 0.875rem;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .period-btn:hover {
+      color: #374151;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    
+    .period-btn.active {
+      background: white;
+      color: #196894;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .inventory-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .overview-card {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .overview-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    }
+    
+    .overview-card:active {
+      transform: translateY(-2px);
+    }
+    
+    .overview-content {
+      width: 100%;
+    }
+    
+    .overview-label {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .overview-value {
+      margin-top: 0.5rem;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .available-card .overview-value {
+      color: #10b981;
+    }
+    
+    .low-stock-card .overview-value {
+      color: #f59e0b;
+    }
+    
+    .out-stock-card .overview-value {
+      color: #ef4444;
+    }
+    
+    .expiring-card .overview-value {
+      color: #8b5cf6;
+    }
+    
+    .overview-card.pressing {
+      transform: scale(0.98);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    header { margin-bottom: 1rem; }
+    header h1 { margin: 0; font-size: 1.6rem; }
+    header p { margin-top: 0.25rem; color: #6b7280; }
+    
+    .dashboard-date {
+      margin-top: 0.75rem;
+      padding: 0.625rem 1rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: inline-block;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .card { background: #fff; padding: 1rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .card h3 { font-size: 0.85rem; color: #6b7280; margin: 0; }
+    .card .value { margin-top: 0.5rem; font-size: 1.4rem; font-weight: 600; }
+
+    .charts { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+    .chart-card { background: #fff; padding: 1rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .chart-card h3 { margin-bottom: 1rem; font-size: 1rem; }
+
+    .transactions, .alerts { margin-bottom: 1rem; }
+    .transactions table, .alerts table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .transactions th, .transactions td, .alerts th, .alerts td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    .transactions th, .alerts th { background: #f9fafb; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* === INVENTORY SPECIFIC CSS === */
+    .inventory-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .inventory-header h2 {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    
+    .inventory-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .date-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .search-add-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .inventory-controls select,
+    .inventory-controls input {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+    
+    .inventory-controls button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #196894;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    
+    .inventory-controls button:hover {
+      background: #155a7a;
+    }
+    
+    .btn-add {
+      background: #10b981 !important;
+      flex: 1;
+    }
+    
+    .btn-add:hover {
+      background: #059669 !important;
+    }
+    
+    #searchProduct {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    /* View Toggle Buttons */
+    .view-toggle {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .view-toggle button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #196894;
+      background: white;
+      color: #196894;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .view-toggle button.active {
+      background: #196894;
+      color: white;
+    }
+    
+    /* Calendar View */
+    .calendar-view {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .calendar-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6b7280;
+      padding: 0.5rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      display: none;
+    }
+    
+    .calendar-header {
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .calendar-day-header {
+      text-align: center;
+      font-weight: 600;
+      padding: 0.5rem;
+      background: #f3f4f6;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    
+    .calendar-day {
+      min-height: 80px;
+      padding: 0.5rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .calendar-day:hover {
+      background: #f9fafb;
+      border-color: #196894;
+    }
+    
+    .calendar-day.selected {
+      background: #dbeafe;
+      border-color: #196894;
+    }
+    
+    .calendar-day.pressing {
+      background: #bfdbfe;
+      transform: scale(0.95);
+      transition: all 0.1s;
+    }
+    
+    .calendar-day.other-month {
+      opacity: 0.3;
+    }
+    
+    .day-number {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+    
+    .day-items {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+    
+    .day-badge {
+      display: inline-block;
+      background: #196894;
+      color: white;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-top: 0.25rem;
+    }
+    
+    /* List View */
+    .list-view {
+      display: none;
+    }
+    
+    .list-view.active {
+      display: block;
+    }
+    
+    /* Date Header for List View */
+    .list-date-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+    
+    .current-date-display {
+      flex: 1;
+      text-align: center;
+      color: white;
+    }
+    
+    .date-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+      margin-bottom: 0.25rem;
+    }
+    
+    .date-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    
+    .date-nav-btn {
+      padding: 0.75rem 1.25rem;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .date-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .date-nav-btn:active {
+      transform: translateY(0);
+    }
+    
+    .date-nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-text-short {
+      display: none;
+    }
+    
+    .btn-text-full {
+      display: inline;
+    }
+    
+    /* Category Section */
+    .category-section {
+      margin-bottom: 2rem;
+    }
+    
+    .category-title {
+      background: linear-gradient(135deg, #196894 0%, #155a7a 100%);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px 12px 0 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .category-count {
+      background: rgba(255,255,255,0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+    
+    .category-items {
+      background: white;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .inventory-card {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      transition: background 0.2s;
+      display: grid;
+      grid-template-columns: 2fr 2fr 1fr 1fr;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .inventory-card:last-child {
+      border-bottom: none;
+    }
+    
+    .inventory-card:hover {
+      background: #f9fafb;
+    }
+    
+    .card-field {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .card-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.5px;
+    }
+    
+    .card-value {
+      font-size: 0.95rem;
+      color: #1f2937;
+      font-weight: 500;
+    }
+    
+    .card-value.product-name {
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.4rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    .status-available {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-low {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-out {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #9ca3af;
+    }
+    
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* Old table styles - keeping for fallback */
+    .inventory-table-wrapper {
+      overflow-x: auto;
+      display: none;
+    }
+    
+    .inventory-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .inventory-table th,
+    .inventory-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+    
+    .inventory-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .inventory-table td {
+      font-size: 0.9rem;
+    }
+    
+    .category-header {
+      background: #196894 !important;
+      color: white !important;
+      font-weight: 700;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 1rem !important;
+    }
+    
+    .category-row td {
+      border-bottom: 2px solid #196894;
+    }
+    
+    .status-low {
+      color: #f59e0b;
+      font-weight: 600;
+    }
+    
+    .status-out {
+      color: #ef4444;
+      font-weight: 600;
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+      line-height: 1;
+      transition: color 0.2s;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-close:hover {
+      color: #374151;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+    
+    .btn-cancel {
+      padding: 0.625rem 1.25rem;
+      border: 1px solid #d1d5db;
+      background: white;
+      color: #6b7280;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn-cancel:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+      color: #374151;
+    }
+    
+    .btn-submit {
+      padding: 0.625rem 1.25rem;
+      border: none;
+      background: #10b981;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn-submit:hover {
+      background: #059669;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    /* Category Management */
+    .category-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+    }
+    
+    .category-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: #f9fafb;
+    }
+    
+    .category-item input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .category-item input:disabled {
+      color: #374151;
+    }
+    
+    .category-item-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .btn-icon {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+      background: #f3f4f6;
+    }
+    
+    .btn-icon.delete {
+      color: #dc2626;
+    }
+    
+    .btn-icon.delete:hover {
+      background: #fee2e2;
+    }
+    
+    .add-category-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .add-category-form input {
+      flex: 1;
+      padding: 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+    }
+    
+    .add-category-form button {
+      padding: 0.6rem 1rem;
+      border: none;
+      background: #10b981;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    .add-category-form button:hover {
+      background: #059669;
+    }
+    
+    /* Stock Detail Modal */
+    .stock-detail-category {
+      margin-bottom: 1.5rem;
+    }
+    
+    .stock-category-header {
+      background: #f9fafb;
+      color: #374151;
+      padding: 0.625rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid #196894;
+    }
+    
+    .stock-item {
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 0.625rem;
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+    
+    .stock-item:hover {
+      border-color: #d1d5db;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stock-item-name {
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    
+    .stock-item-details {
+      font-size: 0.85rem;
+      color: #6b7280;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.5rem;
+    }
+    
+    .stock-item-detail {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .stock-item-detail strong {
+      color: #9ca3af;
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    
+    .stock-item-detail span {
+      color: #374151;
+      font-weight: 500;
+    }
+    
+    .stock-summary {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .stock-summary-title {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    
+    .stock-summary > div:not(.stock-summary-title) {
+      padding: 0.375rem 0;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #f3f4f6;
+    }
+    
+    .stock-summary > div:first-of-type {
+      border-top: none;
+    }
+
+    @media (min-width: 768px) {
+      .app { flex-direction: row; }
+      .charts { flex-direction: row; }
+      .chart-card { flex: 1; }
+      #navToggle { display: none; }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 767px) {
+      .app { flex-direction: column; }
+      
+      .sidebar { 
+        width: 100%; 
+        padding: 0;
+        position: relative;
+        height: auto;
+      }
+      
+      .sidebar-header {
+        padding: 0.75rem 1rem;
+        border: none;
+      }
+      
+      .sidebar-header h2 { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        cursor: pointer;
+        font-size: 1.25rem;
+        margin: 0;
+      }
+      
+      .sidebar nav { 
+        display: none; 
+        flex-direction: column; 
+        gap: 0.25rem; 
+        margin-top: 0;
+        padding: 0.75rem 1rem;
+        flex: none;
+      }
+      
+      .sidebar nav a { 
+        padding: 0.625rem 1rem; 
+        margin: 0; 
+        font-size: 0.875rem; 
+      }
+      
+      .sidebar.open nav { display: flex; }
+      
+      .user-profile {
+        border-top: none;
+      }
+      
+      .user-profile-header {
+        padding: 0.875rem 1rem;
+      }
+      
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+      }
+      
+      .user-name {
+        font-size: 0.85rem;
+      }
+      
+      .user-role {
+        font-size: 0.7rem;
+      }
+      
+      .dropdown-item {
+        padding: 0.625rem 0.75rem;
+      }
+      
+      .role-name {
+        font-size: 0.85rem;
+      }
+      
+      .role-desc {
+        font-size: 0.65rem;
+      }
+      
+      .main {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      
+      /* Dashboard Mobile */
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+      
+      .card {
+        padding: 0.875rem;
+      }
+      
+      .card h3 {
+        font-size: 0.75rem;
+      }
+      
+      .card .value {
+        font-size: 1.1rem;
+      }
+      
+      .dashboard-date {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.875rem;
+        margin-top: 0.5rem;
+      }
+      
+      /* Overview Cards Mobile */
+      .inventory-overview {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+      
+      .overview-card {
+        padding: 0.875rem;
+      }
+      
+      .overview-value {
+        font-size: 1.1rem;
+      }
+      
+      .overview-label {
+        font-size: 0.75rem;
+      }
+      
+      .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      
+      .section-title {
+        font-size: 0.875rem;
+      }
+      
+      .period-selector {
+        width: 100%;
+      }
+      
+      .period-btn {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.5rem;
+      }
+      
+      .transactions td.date {
+        display: inline-block; 
+        min-width: 60px; 
+      }
+      
+      /* Inventory Mobile Adjustments */
+      .inventory-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      
+      .inventory-header h2 {
+        font-size: 1.25rem;
+        margin-bottom: 0;
+      }
+      
+      .inventory-controls {
+        flex-direction: column;
+        gap: 0.625rem;
+      }
+      
+      .date-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 0.5rem;
+        width: 100%;
+      }
+      
+      .date-controls select,
+      .date-controls input {
+        width: 100%;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.4rem;
+      }
+      
+      .date-controls button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+      
+      .search-add-controls {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+      }
+      
+      .search-add-controls input {
+        flex: 1;
+        font-size: 0.85rem;
+        padding: 0.5rem;
+      }
+      
+      .search-add-controls button {
+        flex-shrink: 0;
+        padding: 0.5rem 0.875rem;
+        font-size: 0.85rem;
+      }
+      
+      .view-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .view-toggle button {
+        width: 100%;
+        padding: 0.625rem;
+        font-size: 0.875rem;
+      }
+      
+      /* Calendar Mobile */
+      .calendar-view {
+        padding: 0.75rem;
+      }
+      
+      .calendar-hint {
+        display: block;
+        font-size: 0.7rem;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .calendar-header {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
+      
+      .calendar-grid {
+        gap: 0.25rem;
+      }
+      
+      .calendar-day {
+        min-height: 50px;
+        padding: 0.25rem;
+      }
+      
+      .calendar-day-header {
+        padding: 0.375rem 0.25rem;
+        font-size: 0.7rem;
+      }
+      
+      .day-number {
+        font-size: 0.8rem;
+      }
+      
+      .day-items {
+        font-size: 0.65rem;
+      }
+      
+      .day-badge {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.3rem;
+      }
+      
+      /* Date Header Mobile */
+      .list-date-header {
+        padding: 0.75rem;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .current-date-display {
+        flex: 1;
+        text-align: center;
+      }
+      
+      .date-label {
+        display: none;
+      }
+      
+      .date-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      
+      .date-nav-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        min-width: auto;
+        flex-shrink: 0;
+      }
+      
+      .date-nav-btn:first-of-type {
+        order: 0;
+      }
+      
+      .date-nav-btn:last-of-type {
+        order: 2;
+      }
+      
+      .current-date-display {
+        order: 1;
+      }
+      
+      .btn-text-full {
+        display: none;
+      }
+      
+      .btn-text-short {
+        display: inline;
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+      
+      /* Card Layout Mobile */
+      .inventory-card {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem 0.75rem;
+        padding: 0.75rem 0.875rem;
+      }
+      
+      .card-field {
+        padding-bottom: 0;
+      }
+      
+      .card-label {
+        font-size: 0.65rem;
+        margin-bottom: 0.15rem;
+      }
+      
+      .card-value {
+        font-size: 0.8rem;
+      }
+      
+      .card-value.product-name {
+        font-size: 0.85rem;
+      }
+      
+      .status-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+      }
+      
+      .category-title {
+        font-size: 0.875rem;
+        padding: 0.625rem 0.875rem;
+      }
+      
+      .category-count {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+      }
+      
+      .category-section {
+        margin-bottom: 1rem;
+      }
+      
+      .empty-state {
+        padding: 2rem 1rem;
+      }
+      
+      .empty-state-icon {
+        font-size: 2.5rem;
+      }
+      
+      .empty-state h3 {
+        font-size: 1rem;
+      }
+      
+      .empty-state p {
+        font-size: 0.875rem;
+      }
+      
+      /* Modal Mobile */
+      .modal-content {
+        padding: 1rem;
+        width: 95%;
+        max-height: 85vh;
+      }
+      
+      .modal-header h2 {
+        font-size: 1.1rem;
+      }
+      
+      .form-group {
+        margin-bottom: 0.875rem;
+      }
+      
+      .form-group label {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+      }
+      
+      .form-group input,
+      .form-group select {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+      
+      .form-actions button {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
+      
+      .category-item {
+        padding: 0.625rem;
+      }
+      
+      .category-item input {
+        font-size: 0.85rem;
+      }
+      
+      .btn-icon {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.8rem;
+      }
+      
+      .add-category-form input {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+      
+      .add-category-form button {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+      }
+    }
+    
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .inventory-card {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>HYDROMED <span id="navToggle">☰</span></h2>
+      </div>
+      <nav>
+        <a href="#" class="active" data-page="dashboard">Dashboard</a>
+        <a href="#" data-page="inventory">Inventory</a>
+        <a href="#" data-page="journals">Journals</a>
+        <a href="#" data-page="accounts">Accounts</a>
+        <a href="#" data-page="trial">Trial Balance</a>
+        <a href="#" data-page="financials">Financial Statements</a>
+        <a href="#" data-page="adjustments">Adjustments</a>
+        <a href="#" data-page="reports">Reports</a>
+        <a href="#" data-page="settings">Settings</a>
+      </nav>
+      
+      <!-- User Profile Section -->
+      <div class="user-profile">
+        <div class="user-profile-header" id="userProfileToggle">
+          <div class="user-avatar">
+            <span id="userInitials">JD</span>
+          </div>
+          <div class="user-info">
+            <div class="user-name" id="userName">John Doe</div>
+            <div class="user-role" id="userRole">Owner</div>
+          </div>
+          <div class="dropdown-icon">▼</div>
+        </div>
+        
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-section">
+            <div class="dropdown-label">Switch Role (Demo)</div>
+            <button class="dropdown-item role-switch" data-role="owner">
+              <span class="role-icon">👑</span>
+              <div class="role-info">
+                <div class="role-name">Owner</div>
+                <div class="role-desc">Full access, monitor changes</div>
+              </div>
+            </button>
+            <button class="dropdown-item role-switch" data-role="admin">
+              <span class="role-icon">⚙️</span>
+              <div class="role-info">
+                <div class="role-name">Admin</div>
+                <div class="role-desc">View, write, delete</div>
+              </div>
+            </button>
+            <button class="dropdown-item role-switch" data-role="viewer">
+              <span class="role-icon">👁️</span>
+              <div class="role-info">
+                <div class="role-name">Viewer</div>
+                <div class="role-desc">Read-only access</div>
+              </div>
+            </button>
+          </div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item logout-btn">
+            <span class="logout-icon">🚪</span>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- === DASHBOARD === -->
+      <div class="page active" id="dashboard">
+        <header>
+          <h1>Dashboard</h1>
+          <p>Accounting system overview</p>
+          <div class="dashboard-date" id="dashboardDate">January 23, 2026</div>
+        </header>
+
+        <!-- Inventory Overview Section -->
+        <div class="inventory-overview-section">
+          <div class="section-header">
+            <h3 class="section-title">Inventory Status</h3>
+            <div class="period-selector">
+              <button class="period-btn active" data-period="today">Today</button>
+              <button class="period-btn" data-period="month">This Month</button>
+              <button class="period-btn" data-period="year">This Year</button>
+            </div>
+          </div>
+          
+          <div class="inventory-overview">
+            <div class="overview-card available-card" data-status="Available">
+              <div class="overview-content">
+                <div class="overview-label">Available Stock</div>
+                <div class="overview-value" id="dashAvailableCount">0</div>
+              </div>
+            </div>
+            
+            <div class="overview-card low-stock-card" data-status="Low Stock">
+              <div class="overview-content">
+                <div class="overview-label">Low Stock</div>
+                <div class="overview-value" id="dashLowStockCount">0</div>
+              </div>
+            </div>
+            
+            <div class="overview-card out-stock-card" data-status="Out of Stock">
+              <div class="overview-content">
+                <div class="overview-label">Out of Stock</div>
+                <div class="overview-value" id="dashOutStockCount">0</div>
+              </div>
+            </div>
+            
+            <div class="overview-card expiring-card" data-status="Expiring Soon">
+              <div class="overview-content">
+                <div class="overview-label">Expiring Soon</div>
+                <div class="overview-value" id="dashExpiringCount">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards">
+          <div class="card"><h3>Total Assets</h3><div class="value" id="totalAssets">₱500,000</div></div>
+          <div class="card"><h3>Liabilities</h3><div class="value" id="totalLiabilities">₱200,000</div></div>
+          <div class="card"><h3>Revenue</h3><div class="value" id="totalRevenue">₱120,000</div></div>
+          <div class="card"><h3>Expenses</h3><div class="value" id="totalExpenses">₱75,500</div></div>
+          <div class="card"><h3>Net Profit</h3><div class="value" id="netProfit">₱44,500</div></div>
+        </div>
+
+        <div class="charts">
+          <div class="chart-card"><h3 id="incomeExpensesTitle">Income vs Expenses</h3><canvas id="revExp"></canvas></div>
+          <div class="chart-card"><h3 id="cashFlowTitle">Cash Flow Trends</h3><canvas id="cashFlow"></canvas></div>
+          <div class="chart-card"><h3 id="profitMarginTitle">Profit Margins</h3><canvas id="profitMargin"></canvas></div>
+        </div>
+
+        <div class="transactions">
+          <h3>Recent Transactions</h3>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="transactionsBody">
+              <tr><td class="date">26-01-10</td><td>Invoice #1023</td><td>₱5,000</td><td>Paid</td></tr>
+              <tr><td class="date">26-01-11</td><td>Invoice #1024</td><td>₱7,500</td><td>Unpaid</td></tr>
+              <tr><td class="date">26-01-12</td><td>Invoice #1025</td><td>₱3,200</td><td>Paid</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alerts">
+          <h3>Alerts</h3>
+          <table>
+            <thead>
+              <tr><th>Invoice</th><th>Due Date</th><th>Status</th></tr>
+            </thead>
+            <tbody id="alertsBody">
+              <tr><td>#1024</td><td class="date">26-01-15</td><td>Overdue</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- === INVENTORY PAGE === -->
+      <div class="page" id="inventory">
+        <header class="inventory-header">
+          <h2>Inventory Management</h2>
+          
+          <div class="inventory-controls">
+            <div class="date-controls">
+              <select id="monthSelect">
+                <option value="0">January</option>
+                <option value="1">February</option>
+                <option value="2">March</option>
+                <option value="3">April</option>
+                <option value="4">May</option>
+                <option value="5">June</option>
+                <option value="6">July</option>
+                <option value="7">August</option>
+                <option value="8">September</option>
+                <option value="9">October</option>
+                <option value="10">November</option>
+                <option value="11">December</option>
+              </select>
+              <input type="number" id="yearInput" placeholder="2026" min="2000" max="2100" value="2026">
+              <button id="goDate">Go</button>
+            </div>
+            
+            <div class="search-add-controls">
+              <input type="text" id="searchProduct" placeholder="Search...">
+              <button id="addProductBtn" class="btn-add">+ Add</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="view-toggle">
+          <button id="calendarViewBtn" class="active">Calendar View</button>
+          <button id="listViewBtn">List View</button>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="calendarViewContainer" class="calendar-view">
+          <div class="calendar-hint">💡 Tap to select • Hold to see alerts • Double-tap for details</div>
+          <div class="calendar-header" id="calendarHeader">January 2026</div>
+          <div class="calendar-grid">
+            <div class="calendar-day-header">Sun</div>
+            <div class="calendar-day-header">Mon</div>
+            <div class="calendar-day-header">Tue</div>
+            <div class="calendar-day-header">Wed</div>
+            <div class="calendar-day-header">Thu</div>
+            <div class="calendar-day-header">Fri</div>
+            <div class="calendar-day-header">Sat</div>
+          </div>
+          <div class="calendar-grid" id="calendarDays"></div>
+        </div>
+
+        <!-- List View -->
+        <div id="listViewContainer" class="list-view">
+          <div class="list-date-header" id="listDateHeader">
+            <button class="date-nav-btn" id="prevDateBtn"><span class="btn-text-full">‹ Previous</span><span class="btn-text-short">‹</span></button>
+            <div class="current-date-display" id="currentDateDisplay">
+              <div class="date-label">Viewing Inventory For:</div>
+              <div class="date-value">All Items This Month</div>
+            </div>
+            <button class="date-nav-btn" id="nextDateBtn"><span class="btn-text-full">Next ›</span><span class="btn-text-short">›</span></button>
+          </div>
+          
+          <div id="inventoryBody">
+            <!-- JS inserts inventory cards grouped by category -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="modal" id="addProductModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Product</h2>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <form id="addProductForm">
+        <div class="form-group">
+          <label for="productDate">Date</label>
+          <input type="date" id="productDate" required>
+        </div>
+        <div class="form-group">
+          <label for="productCategory">Category</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="productCategory" required style="flex: 1;">
+              <option value="">Select Category</option>
+            </select>
+            <button type="button" id="manageCategoriesBtn" style="padding: 0.6rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+              ⚙️ Manage
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="productName">Product Name</label>
+          <input type="text" id="productName" required>
+        </div>
+        <div class="form-group">
+          <label for="productBatch">Batch / Expiry</label>
+          <input type="text" id="productBatch" required>
+        </div>
+        <div class="form-group">
+          <label for="productQty">Quantity</label>
+          <input type="number" id="productQty" min="0" required>
+        </div>
+        <div class="form-group">
+          <label for="productStatus">Status</label>
+          <select id="productStatus" required>
+            <option value="Available">Available</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn-submit">Add Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category Management Modal -->
+  <div class="modal" id="categoryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Manage Categories</h2>
+        <button class="modal-close" id="closeCategoryModal">&times;</button>
+      </div>
+      
+      <div class="category-list" id="categoryList">
+        <!-- Categories will be inserted here -->
+      </div>
+      
+      <div class="add-category-form">
+        <input type="text" id="newCategoryInput" placeholder="Enter new category name...">
+        <button id="addCategoryBtn">+ Add</button>
+      </div>
+      
+      <div class="form-actions" style="margin-top: 1.5rem;">
+        <button type="button" class="btn-cancel" id="closeCategoryBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Detail Modal -->
+  <div class="modal" id="stockDetailModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 id="stockDetailTitle">Stock Details</h2>
+        <button class="modal-close" id="closeStockDetailModal">&times;</button>
+      </div>
+      
+      <div id="stockDetailBody" style="max-height: 60vh; overflow-y: auto;">
+        <!-- Stock details will be inserted here -->
+      </div>
+      
+      <div class="form-actions" style="margin-top: 1.5rem;">
+        <button type="button" class="btn-cancel" id="closeStockDetailBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const navToggle = document.getElementById('navToggle');
+    navToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+    // User profile dropdown toggle
+    const userProfileToggle = document.getElementById('userProfileToggle');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    userProfileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userProfileToggle.classList.toggle('open');
+      userDropdown.classList.toggle('open');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!userProfileToggle.contains(e.target) && !userDropdown.contains(e.target)) {
+        userProfileToggle.classList.remove('open');
+        userDropdown.classList.remove('open');
+      }
+    });
+    
+    // Role management
+    let currentRole = 'owner';
+    const roleData = {
+      owner: {
+        name: 'John Doe',
+        initials: 'JD',
+        role: 'Owner',
+        permissions: {
+          canView: true,
+          canWrite: true,
+          canDelete: false,
+          canMonitor: true
+        }
+      },
+      admin: {
+        name: 'Jane Smith',
+        initials: 'JS',
+        role: 'Admin',
+        permissions: {
+          canView: true,
+          canWrite: true,
+          canDelete: true,
+          canMonitor: false
+        }
+      },
+      viewer: {
+        name: 'Mike Johnson',
+        initials: 'MJ',
+        role: 'Viewer',
+        permissions: {
+          canView: true,
+          canWrite: false,
+          canDelete: false,
+          canMonitor: false
+        }
+      }
+    };
+    
+    // Update UI based on role
+    function updateUIForRole(role) {
+      const data = roleData[role];
+      currentRole = role;
+      
+      // Update user info
+      document.getElementById('userName').textContent = data.name;
+      document.getElementById('userRole').textContent = data.role;
+      document.getElementById('userInitials').textContent = data.initials;
+      
+      // Update active role in dropdown
+      document.querySelectorAll('.role-switch').forEach(btn => {
+        if (btn.dataset.role === role) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      // Apply permission-based UI changes
+      applyPermissions(data.permissions);
+      
+      // Close dropdown
+      userProfileToggle.classList.remove('open');
+      userDropdown.classList.remove('open');
+    }
+    
+    // Apply permissions to UI elements
+    function applyPermissions(permissions) {
+      // Hide/show add product button based on write permission
+      const addProductBtn = document.getElementById('addProductBtn');
+      if (addProductBtn) {
+        if (permissions.canWrite) {
+          addProductBtn.style.display = 'block';
+        } else {
+          addProductBtn.style.display = 'none';
+        }
+      }
+      
+      // Hide/show category management for viewers
+      const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
+      if (manageCategoriesBtn) {
+        if (permissions.canWrite) {
+          manageCategoriesBtn.style.display = 'block';
+        } else {
+          manageCategoriesBtn.style.display = 'none';
+        }
+      }
+      
+      // Hide inventory nav link for viewers
+      const inventoryNavLink = document.querySelector('[data-page="inventory"]');
+      if (inventoryNavLink) {
+        if (permissions.canWrite) {
+          inventoryNavLink.style.display = 'block';
+        } else {
+          inventoryNavLink.style.display = 'none';
+          // If currently on inventory page, redirect to dashboard
+          const inventoryPage = document.getElementById('inventory');
+          if (inventoryPage && inventoryPage.classList.contains('active')) {
+            // Switch to dashboard
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('dashboard').classList.add('active');
+            document.querySelectorAll('.sidebar nav a').forEach(l => l.classList.remove('active'));
+            document.querySelector('[data-page="dashboard"]').classList.add('active');
+          }
+        }
+      }
+      
+      // Show notification about role change
+      showRoleNotification(currentRole);
+    }
+    
+    // Show role change notification
+    function showRoleNotification(role) {
+      const data = roleData[role];
+      const permissions = [];
+      
+      if (data.permissions.canView) permissions.push('View');
+      if (data.permissions.canWrite) permissions.push('Write');
+      if (data.permissions.canDelete) permissions.push('Delete');
+      if (data.permissions.canMonitor) permissions.push('Monitor');
+      
+      alert(`Role switched to: ${data.role}\n\nPermissions:\n• ${permissions.join('\n• ')}\n\n(This is a simulation. Database integration pending.)`);
+    }
+    
+    // Role switch handlers
+    document.querySelectorAll('.role-switch').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const role = btn.dataset.role;
+        updateUIForRole(role);
+      });
+    });
+    
+    // Logout handler
+    document.querySelector('.logout-btn').addEventListener('click', () => {
+      if (confirm('Are you sure you want to logout?')) {
+        alert('Logout functionality will be implemented with backend integration.');
+      }
+    });
+    
+    // Initialize with owner role
+    updateUIForRole('owner');
+
+    // Page navigation
+    const pageLinks = document.querySelectorAll('.sidebar nav a');
+    const pages = document.querySelectorAll('.page');
+
+    pageLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const target = link.dataset.page;
+
+        pages.forEach(p => p.classList.remove('active'));
+        document.getElementById(target).classList.add('active');
+
+        pageLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        
+        // Close sidebar on mobile after clicking
+        if (window.innerWidth < 768) {
+          sidebar.classList.remove('open');
+        }
+      });
+    });
+
+    // Charts
+    let revExpChart, cashFlowChart, profitMarginChart;
+    
+    // Sample dashboard data
+    const dashboardData = {
+      today: {
+        assets: 500000,
+        liabilities: 200000,
+        revenue: 12000,
+        expenses: 7500,
+        netProfit: 4500,
+        incomeExpenses: {
+          labels: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'],
+          income: [300, 280, 250, 230, 200, 350, 500, 700, 900, 1100, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 2700, 2400, 2100, 1800, 1500],
+          expenses: [200, 190, 180, 170, 150, 250, 350, 500, 650, 850, 1000, 1150, 1300, 1450, 1600, 1750, 1900, 2000, 2100, 2000, 1800, 1600, 1400, 1200]
+        },
+        cashFlow: {
+          labels: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'],
+          data: [100, 90, 70, 60, 50, 100, 150, 200, 250, 250, 400, 450, 500, 550, 600, 650, 700, 800, 900, 700, 600, 500, 400, 300]
+        },
+        profitMargin: {
+          labels: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'],
+          data: [33, 32, 28, 26, 25, 29, 30, 29, 28, 23, 29, 28, 28, 27, 27, 27, 27, 29, 30, 26, 25, 24, 22, 20]
+        },
+        transactions: [
+          { date: '26-01-23 02:15', desc: 'Emergency #1028', amount: '₱3,500', status: 'Paid' },
+          { date: '26-01-23 08:30', desc: 'Consultation #1030', amount: '₱2,000', status: 'Paid' },
+          { date: '26-01-23 10:15', desc: 'Lab Test #1031', amount: '₱1,800', status: 'Paid' },
+          { date: '26-01-23 14:20', desc: 'X-Ray #1032', amount: '₱2,500', status: 'Paid' },
+          { date: '26-01-23 18:45', desc: 'Surgery #1033', amount: '₱15,000', status: 'Unpaid' },
+          { date: '26-01-23 22:30', desc: 'Emergency #1034', amount: '₱4,200', status: 'Paid' }
+        ],
+        alerts: [
+          { invoice: '#1033', dueDate: '26-01-23 20:00', status: 'Pending Payment' }
+        ]
+      },
+      month: {
+        assets: 500000,
+        liabilities: 200000,
+        revenue: 120000,
+        expenses: 75500,
+        netProfit: 44500,
+        incomeExpenses: {
+          labels: ['Day 1-5', 'Day 6-10', 'Day 11-15', 'Day 16-20', 'Day 21-25', 'Day 26-31'],
+          income: [15000, 18000, 20000, 17000, 22000, 28000],
+          expenses: [9000, 11000, 12000, 10500, 13000, 15000]
+        },
+        cashFlow: {
+          labels: ['Day 1-5', 'Day 6-10', 'Day 11-15', 'Day 16-20', 'Day 21-25', 'Day 26-31'],
+          data: [6000, 7000, 8000, 6500, 9000, 13000]
+        },
+        profitMargin: {
+          labels: ['Day 1-5', 'Day 6-10', 'Day 11-15', 'Day 16-20', 'Day 21-25', 'Day 26-31'],
+          data: [40, 39, 40, 38, 41, 46]
+        },
+        transactions: [
+          { date: '26-01-10', desc: 'Invoice #1023', amount: '₱5,000', status: 'Paid' },
+          { date: '26-01-11', desc: 'Invoice #1024', amount: '₱7,500', status: 'Unpaid' },
+          { date: '26-01-12', desc: 'Invoice #1025', amount: '₱3,200', status: 'Paid' },
+          { date: '26-01-15', desc: 'Invoice #1026', amount: '₱8,900', status: 'Paid' },
+          { date: '26-01-18', desc: 'Invoice #1027', amount: '₱4,200', status: 'Paid' }
+        ],
+        alerts: [
+          { invoice: '#1024', dueDate: '26-01-15', status: 'Overdue' }
+        ]
+      },
+      year: {
+        assets: 500000,
+        liabilities: 200000,
+        revenue: 1440000,
+        expenses: 906000,
+        netProfit: 534000,
+        incomeExpenses: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          income: [15000, 18000, 20000, 17000, 22000, 28000, 24000, 26000, 23000, 25000, 27000, 30000],
+          expenses: [9000, 11000, 12000, 10500, 13000, 15000, 14000, 15500, 13500, 14500, 16000, 17000]
+        },
+        cashFlow: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          data: [6000, 7000, 8000, 6500, 9000, 13000, 10000, 10500, 9500, 10500, 11000, 13000]
+        },
+        profitMargin: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          data: [40, 39, 40, 38, 41, 46, 42, 41, 41, 42, 41, 43]
+        },
+        transactions: [
+          { date: '26-01-10', desc: 'Invoice #1023', amount: '₱5,000', status: 'Paid' },
+          { date: '26-02-15', desc: 'Invoice #1024', amount: '₱7,500', status: 'Paid' },
+          { date: '26-03-20', desc: 'Invoice #1025', amount: '₱8,200', status: 'Paid' },
+          { date: '26-04-12', desc: 'Invoice #1026', amount: '₱6,500', status: 'Paid' },
+          { date: '26-05-18', desc: 'Invoice #1027', amount: '₱9,200', status: 'Paid' }
+        ],
+        alerts: []
+      }
+    };
+    
+    function initializeCharts() {
+      const data = dashboardData.month;
+      
+      revExpChart = new Chart(document.getElementById('revExp'), {
+        type: 'line',
+        data: {
+          labels: data.incomeExpenses.labels,
+          datasets: [
+            { label: 'Income', data: data.incomeExpenses.income, borderColor:'#2563eb', tension:0.4, fill:false },
+            { label: 'Expenses', data: data.incomeExpenses.expenses, borderColor:'#ef4444', tension:0.4, fill:false }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: true,
+          plugins: { legend: { position:'bottom' } },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false,
+                font: {
+                  size: 10
+                }
+              }
+            }
+          }
+        }
+      });
+
+      cashFlowChart = new Chart(document.getElementById('cashFlow'), {
+        type: 'bar',
+        data: {
+          labels: data.cashFlow.labels,
+          datasets: [{ label: 'Cash Flow', data: data.cashFlow.data, backgroundColor:'#10b981' }]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: true,
+          plugins: { legend: { display:false } },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false,
+                font: {
+                  size: 10
+                }
+              }
+            }
+          }
+        }
+      });
+
+      profitMarginChart = new Chart(document.getElementById('profitMargin'), {
+        type: 'line',
+        data: {
+          labels: data.profitMargin.labels,
+          datasets: [{ label: 'Profit Margin %', data: data.profitMargin.data, borderColor:'#f59e0b', tension:0.4, fill:false }]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: true,
+          plugins: { legend: { position:'bottom' } }, 
+          scales: { 
+            y: { beginAtZero:true, max:100 },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false,
+                font: {
+                  size: 10
+                }
+              }
+            }
+          } 
+        }
+      });
+    }
+    
+    function updateDashboardData(period) {
+      const data = dashboardData[period];
+      
+      // Update date display
+      const today = new Date();
+      const dashboardDateEl = document.getElementById('dashboardDate');
+      
+      if (period === 'today') {
+        // Format: "January 23, 2026"
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        dashboardDateEl.textContent = today.toLocaleDateString('en-US', options);
+      } else if (period === 'month') {
+        // Format: "January 2026"
+        const options = { year: 'numeric', month: 'long' };
+        dashboardDateEl.textContent = today.toLocaleDateString('en-US', options);
+      } else if (period === 'year') {
+        // Format: "2026"
+        dashboardDateEl.textContent = today.getFullYear().toString();
+      }
+      
+      // Update financial cards
+      document.getElementById('totalAssets').textContent = `₱${data.assets.toLocaleString()}`;
+      document.getElementById('totalLiabilities').textContent = `₱${data.liabilities.toLocaleString()}`;
+      document.getElementById('totalRevenue').textContent = `₱${data.revenue.toLocaleString()}`;
+      document.getElementById('totalExpenses').textContent = `₱${data.expenses.toLocaleString()}`;
+      document.getElementById('netProfit').textContent = `₱${data.netProfit.toLocaleString()}`;
+      
+      // Update chart titles
+      const titleSuffix = period === 'today' ? ' (Today)' : period === 'month' ? ' (This Month)' : ' (This Year)';
+      document.getElementById('incomeExpensesTitle').textContent = 'Income vs Expenses' + titleSuffix;
+      document.getElementById('cashFlowTitle').textContent = 'Cash Flow Trends' + titleSuffix;
+      document.getElementById('profitMarginTitle').textContent = 'Profit Margins' + titleSuffix;
+      
+      // Update charts
+      revExpChart.data.labels = data.incomeExpenses.labels;
+      revExpChart.data.datasets[0].data = data.incomeExpenses.income;
+      revExpChart.data.datasets[1].data = data.incomeExpenses.expenses;
+      revExpChart.update();
+      
+      cashFlowChart.data.labels = data.cashFlow.labels;
+      cashFlowChart.data.datasets[0].data = data.cashFlow.data;
+      cashFlowChart.update();
+      
+      profitMarginChart.data.labels = data.profitMargin.labels;
+      profitMarginChart.data.datasets[0].data = data.profitMargin.data;
+      profitMarginChart.update();
+      
+      // Update transactions
+      const transactionsBody = document.getElementById('transactionsBody');
+      transactionsBody.innerHTML = data.transactions.map(t => `
+        <tr>
+          <td class="date">${t.date}</td>
+          <td>${t.desc}</td>
+          <td>${t.amount}</td>
+          <td>${t.status}</td>
+        </tr>
+      `).join('');
+      
+      // Update alerts
+      const alertsBody = document.getElementById('alertsBody');
+      if (data.alerts.length === 0) {
+        alertsBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No alerts</td></tr>';
+      } else {
+        alertsBody.innerHTML = data.alerts.map(a => `
+          <tr>
+            <td>${a.invoice}</td>
+            <td class="date">${a.dueDate}</td>
+            <td>${a.status}</td>
+          </tr>
+        `).join('');
+      }
+    }
+    
+    initializeCharts();
+
+    // === INVENTORY SYSTEM ===
+    const inventoryBody = document.getElementById('inventoryBody');
+    const monthSelect = document.getElementById('monthSelect');
+    const yearInput = document.getElementById('yearInput');
+    const goDateBtn = document.getElementById('goDate');
+    const searchInput = document.getElementById('searchProduct');
+    const calendarViewBtn = document.getElementById('calendarViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+    const calendarViewContainer = document.getElementById('calendarViewContainer');
+    const listViewContainer = document.getElementById('listViewContainer');
+    const calendarHeader = document.getElementById('calendarHeader');
+    const calendarDays = document.getElementById('calendarDays');
+    const addProductBtn = document.getElementById('addProductBtn');
+    const addProductModal = document.getElementById('addProductModal');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const addProductForm = document.getElementById('addProductForm');
+    const productDate = document.getElementById('productDate');
+    const productCategory = document.getElementById('productCategory');
+    
+    // Date navigation controls
+    const currentDateDisplay = document.getElementById('currentDateDisplay');
+    const prevDateBtn = document.getElementById('prevDateBtn');
+    const nextDateBtn = document.getElementById('nextDateBtn');
+    
+    // Category Management
+    const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
+    const categoryModal = document.getElementById('categoryModal');
+    const closeCategoryModal = document.getElementById('closeCategoryModal');
+    const closeCategoryBtn = document.getElementById('closeCategoryBtn');
+    const categoryList = document.getElementById('categoryList');
+    const newCategoryInput = document.getElementById('newCategoryInput');
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+
+    let currentMonth = new Date().getMonth(); // Current month
+    let currentYear = new Date().getFullYear(); // Current year
+    let currentView = 'calendar';
+    let selectedDate = null;
+    let viewingSpecificDate = false; // Track if viewing specific date or full month
+    
+    // Categories array
+    let categories = ['IV', 'TABS/CAPS', 'GALLON', 'BOX', 'PIECE'];
+
+    // Sample inventory data
+    let inventoryData = [
+      { date: '2026-01-21', category: 'BOX', product: 'Surgical Gloves', batch: 'A101/2027-06', qty: 50, status: 'Available' },
+      { date: '2026-01-21', category: 'PIECE', product: 'Syringe 5ml', batch: 'B201/2027-12', qty: 30, status: 'Low Stock' },
+      { date: '2026-01-22', category: 'IV', product: 'Saline Solution', batch: 'C301/2026-08', qty: 100, status: 'Available' },
+      { date: '2026-01-23', category: 'BOX', product: 'Bandages', batch: 'D401/2027-03', qty: 75, status: 'Available' },
+      { date: '2026-01-23', category: 'BOX', product: 'Alcohol Swabs', batch: 'E501/2026-11', qty: 15, status: 'Low Stock' },
+      { date: '2026-01-25', category: 'PIECE', product: 'Face Masks', batch: 'F601/2027-01', qty: 200, status: 'Available' },
+      { date: '2026-01-28', category: 'BOX', product: 'Cotton Balls', batch: 'G701/2027-05', qty: 5, status: 'Out of Stock' },
+      { date: '2026-01-21', category: 'TABS/CAPS', product: 'Paracetamol 500mg', batch: 'H801/2027-09', qty: 120, status: 'Available' },
+      { date: '2026-01-22', category: 'GALLON', product: 'Distilled Water', batch: 'I901/2026-12', qty: 25, status: 'Available' },
+      { date: '2026-01-23', category: 'IV', product: 'Dextrose 5%', batch: 'J101/2027-04', qty: 45, status: 'Low Stock' },
+    ];
+
+    // Set today's date in modal by default
+    const today = new Date().toISOString().split('T')[0];
+    productDate.value = today;
+    
+    // Stock Detail Modal elements
+    const stockDetailModal = document.getElementById('stockDetailModal');
+    const closeStockDetailModal = document.getElementById('closeStockDetailModal');
+    const closeStockDetailBtn = document.getElementById('closeStockDetailBtn');
+    const stockDetailTitle = document.getElementById('stockDetailTitle');
+    const stockDetailBody = document.getElementById('stockDetailBody');
+    
+    // Period selector
+    let currentPeriod = 'today';
+    const periodBtns = document.querySelectorAll('.period-btn');
+    
+    periodBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentPeriod = btn.dataset.period;
+        periodBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateDashboardOverview();
+        updateDashboardData(currentPeriod);
+      });
+    });
+    
+    // Update dashboard inventory overview
+    function updateDashboardOverview() {
+      const today = new Date();
+      let filteredItems = [];
+      
+      if (currentPeriod === 'today') {
+        const todayStr = today.toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date === todayStr);
+      } else if (currentPeriod === 'month') {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date >= monthStart && item.date <= monthEnd);
+      } else if (currentPeriod === 'year') {
+        const yearStart = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        const yearEnd = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date >= yearStart && item.date <= yearEnd);
+      }
+      
+      const available = filteredItems.filter(item => item.status === 'Available');
+      const lowStock = filteredItems.filter(item => item.status === 'Low Stock');
+      const outStock = filteredItems.filter(item => item.status === 'Out of Stock');
+      
+      // Calculate expiring soon (items expiring within 30 days)
+      const expiringItems = filteredItems.filter(item => {
+        if (!item.batch) return false;
+        // Extract expiry date from batch (format: "XXX/YYYY-MM")
+        const parts = item.batch.split('/');
+        if (parts.length < 2) return false;
+        const expiryParts = parts[1].split('-');
+        if (expiryParts.length < 2) return false;
+        
+        const expiryYear = parseInt(expiryParts[0]);
+        const expiryMonth = parseInt(expiryParts[1]) - 1;
+        const expiryDate = new Date(expiryYear, expiryMonth, 1);
+        
+        const diffTime = expiryDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays <= 30 && diffDays >= 0;
+      });
+      
+      // Calculate totals
+      const availableQty = available.reduce((sum, item) => sum + item.qty, 0);
+      const lowStockQty = lowStock.reduce((sum, item) => sum + item.qty, 0);
+      const outStockQty = outStock.reduce((sum, item) => sum + item.qty, 0);
+      const expiringQty = expiringItems.reduce((sum, item) => sum + item.qty, 0);
+      
+      // Update counts
+      document.getElementById('dashAvailableCount').textContent = availableQty;
+      document.getElementById('dashLowStockCount').textContent = lowStockQty;
+      document.getElementById('dashOutStockCount').textContent = outStockQty;
+      document.getElementById('dashExpiringCount').textContent = expiringQty;
+    }
+    
+    // Show stock detail modal
+    function showStockDetail(status) {
+      const today = new Date();
+      let filteredItems = [];
+      
+      // Filter by period
+      if (currentPeriod === 'today') {
+        const todayStr = today.toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date === todayStr);
+      } else if (currentPeriod === 'month') {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date >= monthStart && item.date <= monthEnd);
+      } else if (currentPeriod === 'year') {
+        const yearStart = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        const yearEnd = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+        filteredItems = inventoryData.filter(item => item.date >= yearStart && item.date <= yearEnd);
+      }
+      
+      let items;
+      
+      if (status === 'Expiring Soon') {
+        // Get expiring items
+        items = filteredItems.filter(item => {
+          if (!item.batch) return false;
+          const parts = item.batch.split('/');
+          if (parts.length < 2) return false;
+          const expiryParts = parts[1].split('-');
+          if (expiryParts.length < 2) return false;
+          
+          const expiryYear = parseInt(expiryParts[0]);
+          const expiryMonth = parseInt(expiryParts[1]) - 1;
+          const expiryDate = new Date(expiryYear, expiryMonth, 1);
+          
+          const diffTime = expiryDate - today;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          return diffDays <= 30 && diffDays >= 0;
+        });
+      } else {
+        items = filteredItems.filter(item => item.status === status);
+      }
+      
+      const periodText = currentPeriod === 'today' ? 'Today' : 
+                        currentPeriod === 'month' ? 'This Month' : 'This Year';
+      
+      if (items.length === 0) {
+        stockDetailTitle.textContent = `${status} - ${periodText}`;
+        stockDetailBody.innerHTML = `
+          <div class="empty-state" style="padding: 2rem;">
+            <div class="empty-state-icon">📦</div>
+            <p>No items with "${status}" status in ${periodText.toLowerCase()}</p>
+          </div>
+        `;
+      } else {
+        stockDetailTitle.textContent = `${status} - ${periodText}`;
+        
+        // Group by category
+        const grouped = {};
+        items.forEach(item => {
+          if (!grouped[item.category]) grouped[item.category] = [];
+          grouped[item.category].push(item);
+        });
+        
+        let html = '';
+        Object.keys(grouped).sort().forEach(category => {
+          html += `
+            <div class="stock-detail-category">
+              <div class="stock-category-header">${category}</div>
+          `;
+          
+          grouped[category].forEach(item => {
+            html += `
+              <div class="stock-item">
+                <div class="stock-item-name">${item.product}</div>
+                <div class="stock-item-details">
+                  <div class="stock-item-detail">
+                    <strong>Date:</strong> <span>${item.date}</span>
+                  </div>
+                  <div class="stock-item-detail">
+                    <strong>Batch:</strong> <span>${item.batch}</span>
+                  </div>
+                  <div class="stock-item-detail">
+                    <strong>Qty:</strong> <span>${item.qty}</span>
+                  </div>
+                  <div class="stock-item-detail">
+                    <strong>Status:</strong> <span>${item.status}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `</div>`;
+        });
+        
+        // Add summary
+        const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+        html += `
+          <div class="stock-summary">
+            <div class="stock-summary-title">Summary</div>
+            <div><span>Total Items</span><span>${items.length}</span></div>
+            <div><span>Total Quantity</span><span>${totalQty}</span></div>
+          </div>
+        `;
+        
+        stockDetailBody.innerHTML = html;
+      }
+      
+      stockDetailModal.classList.add('active');
+    }
+    
+    // Close stock detail modal
+    closeStockDetailModal.addEventListener('click', () => {
+      stockDetailModal.classList.remove('active');
+    });
+    
+    closeStockDetailBtn.addEventListener('click', () => {
+      stockDetailModal.classList.remove('active');
+    });
+    
+    // Add click/touch handlers to overview cards
+    document.querySelectorAll('.overview-card').forEach(card => {
+      let touchTimer;
+      let touchStarted = false;
+      
+      // Desktop: Double-click
+      card.addEventListener('dblclick', () => {
+        const status = card.dataset.status;
+        showStockDetail(status);
+      });
+      
+      // Mobile: Touch and hold
+      card.addEventListener('touchstart', (e) => {
+        touchStarted = true;
+        card.classList.add('pressing');
+        touchTimer = setTimeout(() => {
+          const status = card.dataset.status;
+          card.classList.remove('pressing');
+          showStockDetail(status);
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }, 500);
+      });
+      
+      card.addEventListener('touchend', () => {
+        clearTimeout(touchTimer);
+        card.classList.remove('pressing');
+        setTimeout(() => { touchStarted = false; }, 100);
+      });
+      
+      card.addEventListener('touchmove', () => {
+        clearTimeout(touchTimer);
+        card.classList.remove('pressing');
+      });
+    });
+    
+    // Update date display in list view
+    function updateDateDisplay() {
+      const dateValueEl = currentDateDisplay.querySelector('.date-value');
+      
+      if (viewingSpecificDate && selectedDate) {
+        const date = new Date(selectedDate);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateValueEl.textContent = date.toLocaleDateString('en-US', options);
+      } else {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        dateValueEl.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+      }
+    }
+    
+    // Navigate to previous date
+    prevDateBtn.addEventListener('click', () => {
+      if (viewingSpecificDate && selectedDate) {
+        const date = new Date(selectedDate);
+        date.setDate(date.getDate() - 1);
+        selectedDate = date.toISOString().split('T')[0];
+        updateDateDisplay();
+        renderListViewForDate(selectedDate);
+      }
+    });
+    
+    // Navigate to next date
+    nextDateBtn.addEventListener('click', () => {
+      if (viewingSpecificDate && selectedDate) {
+        const date = new Date(selectedDate);
+        date.setDate(date.getDate() + 1);
+        selectedDate = date.toISOString().split('T')[0];
+        updateDateDisplay();
+        renderListViewForDate(selectedDate);
+      }
+    });
+    
+    // Populate category dropdown
+    function populateCategoryDropdown() {
+      productCategory.innerHTML = '<option value="">Select Category</option>';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        productCategory.appendChild(option);
+      });
+    }
+    
+    // Render category list in management modal
+    function renderCategoryList() {
+      categoryList.innerHTML = categories.map((cat, index) => `
+        <div class="category-item">
+          <input type="text" value="${cat}" id="cat-${index}" disabled>
+          <div class="category-item-actions">
+            <button class="btn-icon edit" onclick="editCategory(${index})">✏️</button>
+            <button class="btn-icon delete" onclick="deleteCategory(${index})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Edit category
+    window.editCategory = function(index) {
+      const input = document.getElementById(`cat-${index}`);
+      const isDisabled = input.disabled;
+      
+      if (isDisabled) {
+        input.disabled = false;
+        input.focus();
+        input.select();
+      } else {
+        const newName = input.value.trim();
+        if (newName && newName !== categories[index]) {
+          // Update category name in inventory data
+          const oldName = categories[index];
+          inventoryData.forEach(item => {
+            if (item.category === oldName) {
+              item.category = newName;
+            }
+          });
+          categories[index] = newName;
+          categories.sort();
+          populateCategoryDropdown();
+          renderCategoryList();
+          
+          // Refresh view if needed
+          if (currentView === 'list') {
+            renderListView();
+          } else {
+            renderCalendar();
+          }
+        }
+        input.disabled = true;
+      }
+    };
+    
+    // Delete category
+    window.deleteCategory = function(index) {
+      const categoryToDelete = categories[index];
+      const itemsInCategory = inventoryData.filter(item => item.category === categoryToDelete).length;
+      
+      if (itemsInCategory > 0) {
+        if (!confirm(`There are ${itemsInCategory} product(s) in "${categoryToDelete}". Delete anyway?`)) {
+          return;
+        }
+      }
+      
+      categories.splice(index, 1);
+      populateCategoryDropdown();
+      renderCategoryList();
+      
+      // Refresh view if needed
+      if (currentView === 'list') {
+        renderListView();
+      }
+    };
+    
+    // Add new category
+    addCategoryBtn.addEventListener('click', () => {
+      const newCategory = newCategoryInput.value.trim().toUpperCase();
+      
+      if (!newCategory) {
+        alert('Please enter a category name');
+        return;
+      }
+      
+      if (categories.includes(newCategory)) {
+        alert('Category already exists');
+        return;
+      }
+      
+      categories.push(newCategory);
+      categories.sort();
+      newCategoryInput.value = '';
+      populateCategoryDropdown();
+      renderCategoryList();
+    });
+    
+    // Category modal controls
+    manageCategoriesBtn.addEventListener('click', () => {
+      renderCategoryList();
+      categoryModal.classList.add('active');
+    });
+    
+    closeCategoryModal.addEventListener('click', () => {
+      categoryModal.classList.remove('active');
+    });
+    
+    closeCategoryBtn.addEventListener('click', () => {
+      categoryModal.classList.remove('active');
+    });
+    
+    // Initialize category dropdown
+    populateCategoryDropdown();
+
+    // View Toggle
+    calendarViewBtn.addEventListener('click', () => {
+      currentView = 'calendar';
+      viewingSpecificDate = false;
+      calendarViewBtn.classList.add('active');
+      listViewBtn.classList.remove('active');
+      calendarViewContainer.style.display = 'block';
+      listViewContainer.classList.remove('active');
+      renderCalendar();
+    });
+
+    listViewBtn.addEventListener('click', () => {
+      currentView = 'list';
+      viewingSpecificDate = false;
+      listViewBtn.classList.add('active');
+      calendarViewBtn.classList.remove('active');
+      calendarViewContainer.style.display = 'none';
+      listViewContainer.classList.add('active');
+      updateDateDisplay();
+      renderListView();
+    });
+
+    // Month/Year Selection
+    goDateBtn.addEventListener('click', () => {
+      currentMonth = parseInt(monthSelect.value);
+      currentYear = parseInt(yearInput.value) || 2026;
+      if (currentView === 'calendar') {
+        renderCalendar();
+      } else {
+        renderListView();
+      }
+    });
+
+    // Update calendar when month or year changes
+    monthSelect.addEventListener('change', () => {
+      currentMonth = parseInt(monthSelect.value);
+      if (currentView === 'calendar') {
+        renderCalendar();
+      }
+    });
+
+    yearInput.addEventListener('change', () => {
+      currentYear = parseInt(yearInput.value) || 2026;
+      if (currentView === 'calendar') {
+        renderCalendar();
+      }
+    });
+
+    // Search
+    searchInput.addEventListener('input', () => {
+      if (currentView === 'list') {
+        renderListView();
+      }
+    });
+
+    // Modal Controls
+    addProductBtn.addEventListener('click', () => {
+      addProductModal.classList.add('active');
+    });
+
+    closeModal.addEventListener('click', () => {
+      addProductModal.classList.remove('active');
+      addProductForm.reset();
+      productDate.value = today;
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      addProductModal.classList.remove('active');
+      addProductForm.reset();
+      productDate.value = today;
+    });
+
+    // Add Product Form Submit
+    addProductForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const newProduct = {
+        date: document.getElementById('productDate').value,
+        category: document.getElementById('productCategory').value,
+        product: document.getElementById('productName').value,
+        batch: document.getElementById('productBatch').value,
+        qty: parseInt(document.getElementById('productQty').value),
+        status: document.getElementById('productStatus').value
+      };
+      
+      inventoryData.push(newProduct);
+      inventoryData.sort((a, b) => {
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return a.category.localeCompare(b.category);
+      });
+      
+      addProductModal.classList.remove('active');
+      addProductForm.reset();
+      productDate.value = today;
+      
+      // Update views
+      if (currentView === 'calendar') {
+        renderCalendar();
+      } else {
+        renderListView();
+      }
+      
+      // Update dashboard overview
+      updateDashboardOverview();
+    });
+
+    // Render Calendar View
+    function renderCalendar() {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      calendarHeader.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+      
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+      
+      let html = '';
+      
+      // Previous month days
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="calendar-day other-month">
+          <div class="day-number">${prevMonthDays - i}</div>
+        </div>`;
+      }
+      
+      // Current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayItems = inventoryData.filter(item => item.date === dateStr);
+        const isSelected = selectedDate === dateStr;
+        
+        html += `<div class="calendar-day ${isSelected ? 'selected' : ''}" data-date="${dateStr}">
+          <div class="day-number">${day}</div>
+          <div class="day-items">
+            ${dayItems.length > 0 ? `<span class="day-badge">${dayItems.length} item${dayItems.length > 1 ? 's' : ''}</span>` : ''}
+          </div>
+        </div>`;
+      }
+      
+      // Next month days
+      const totalCells = firstDay + daysInMonth;
+      const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 1; i <= remainingCells; i++) {
+        html += `<div class="calendar-day other-month">
+          <div class="day-number">${i}</div>
+        </div>`;
+      }
+      
+      calendarDays.innerHTML = html;
+      
+      // Add click handlers to calendar days
+      document.querySelectorAll('.calendar-day:not(.other-month)').forEach(day => {
+        let touchTimer;
+        let touchStarted = false;
+        
+        // Single click - just select/highlight
+        day.addEventListener('click', (e) => {
+          if (!touchStarted) {
+            selectedDate = day.dataset.date;
+            renderCalendar();
+          }
+        });
+        
+        // Touch and hold for mobile
+        day.addEventListener('touchstart', (e) => {
+          touchStarted = true;
+          day.classList.add('pressing');
+          touchTimer = setTimeout(() => {
+            selectedDate = day.dataset.date;
+            day.classList.remove('pressing');
+            renderCalendar();
+            showDayDetails(selectedDate);
+            // Haptic feedback if available
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
+          }, 500); // Hold for 500ms
+        });
+        
+        day.addEventListener('touchend', () => {
+          clearTimeout(touchTimer);
+          day.classList.remove('pressing');
+          setTimeout(() => { touchStarted = false; }, 100);
+        });
+        
+        day.addEventListener('touchmove', () => {
+          clearTimeout(touchTimer);
+          day.classList.remove('pressing');
+        });
+        
+        // Double-click to go to list view for that date
+        day.addEventListener('dblclick', () => {
+          selectedDate = day.dataset.date;
+          viewingSpecificDate = true;
+          currentView = 'list';
+          listViewBtn.classList.add('active');
+          calendarViewBtn.classList.remove('active');
+          calendarViewContainer.style.display = 'none';
+          listViewContainer.classList.add('active');
+          updateDateDisplay();
+          renderListViewForDate(selectedDate);
+        });
+      });
+    }
+
+    // Show day details when Enter is pressed (Desktop)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && selectedDate && currentView === 'calendar') {
+        showDayDetails(selectedDate);
+      }
+    });
+
+    // Show day details when Enter is pressed (Low Stock and Out of Stock only)
+    function showDayDetails(dateStr) {
+      const items = inventoryData.filter(item => item.date === dateStr);
+      
+      // Filter only Low Stock and Out of Stock items
+      const criticalItems = items.filter(item => 
+        item.status === 'Low Stock' || item.status === 'Out of Stock'
+      );
+      
+      if (criticalItems.length === 0) {
+        alert(`✅ All inventory items are in good stock on ${dateStr}`);
+        return;
+      }
+      
+      // Group by category for the alert
+      const grouped = {};
+      criticalItems.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+      
+      let message = `⚠️ Stock Alert for ${dateStr}\n\n`;
+      
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+      
+      Object.keys(grouped).sort().forEach(category => {
+        message += `${category}:\n`;
+        grouped[category].forEach(item => {
+          const icon = item.status === 'Out of Stock' ? '🔴' : '🟡';
+          message += `  ${icon} ${item.product}\n`;
+          message += `     Batch: ${item.batch}\n`;
+          message += `     Qty: ${item.qty} - ${item.status}\n`;
+          
+          if (item.status === 'Low Stock') lowStockCount++;
+          if (item.status === 'Out of Stock') outOfStockCount++;
+        });
+        message += '\n';
+      });
+      
+      message += `\nSummary:\n`;
+      if (lowStockCount > 0) message += `🟡 Low Stock: ${lowStockCount} item(s)\n`;
+      if (outOfStockCount > 0) message += `🔴 Out of Stock: ${outOfStockCount} item(s)\n`;
+      
+      alert(message);
+    }
+
+    // Render List View
+    function renderListView() {
+      updateDateDisplay();
+      
+      const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      const monthEnd = `${currentYear}-${String(currentMonth + 2).padStart(2, '0')}-01`;
+      
+      let filtered = inventoryData.filter(item => {
+        const itemDate = item.date;
+        return itemDate >= monthStart && itemDate < monthEnd;
+      });
+      
+      const search = searchInput.value.toLowerCase();
+      if (search) {
+        filtered = filtered.filter(item => 
+          item.product.toLowerCase().includes(search) ||
+          item.batch.toLowerCase().includes(search) ||
+          item.category.toLowerCase().includes(search)
+        );
+      }
+      
+      if (filtered.length === 0) {
+        inventoryBody.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <h3>No inventory found</h3>
+            <p>Try adjusting your filters or add new products</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Group by category
+      const groupedByCategory = {};
+      filtered.forEach(item => {
+        if (!groupedByCategory[item.category]) {
+          groupedByCategory[item.category] = [];
+        }
+        groupedByCategory[item.category].push(item);
+      });
+      
+      // Sort categories
+      const categories = Object.keys(groupedByCategory).sort();
+      
+      let html = '';
+      categories.forEach(category => {
+        const items = groupedByCategory[category];
+        html += `
+          <div class="category-section">
+            <div class="category-title">
+              <span>${category}</span>
+              <span class="category-count">${items.length} item${items.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="category-items">
+        `;
+        
+        items.forEach(item => {
+          const statusClass = item.status === 'Available' ? 'status-available' : 
+                             item.status === 'Low Stock' ? 'status-low' : 'status-out';
+          html += `
+            <div class="inventory-card">
+              <div class="card-field">
+                <div class="card-label">Product Name</div>
+                <div class="card-value product-name">${item.product}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Batch / Expiry</div>
+                <div class="card-value">${item.batch}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Quantity</div>
+                <div class="card-value">${item.qty}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Status</div>
+                <div class="status-badge ${statusClass}">${item.status}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      inventoryBody.innerHTML = html;
+    }
+
+    // Render List View for specific date
+    function renderListViewForDate(dateStr) {
+      updateDateDisplay();
+      
+      let filtered = inventoryData.filter(item => item.date === dateStr);
+      
+      const search = searchInput.value.toLowerCase();
+      if (search) {
+        filtered = filtered.filter(item => 
+          item.product.toLowerCase().includes(search) ||
+          item.batch.toLowerCase().includes(search) ||
+          item.category.toLowerCase().includes(search)
+        );
+      }
+      
+      if (filtered.length === 0) {
+        inventoryBody.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <h3>No inventory for ${dateStr}</h3>
+            <p>No products found for this date</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Group by category
+      const groupedByCategory = {};
+      filtered.forEach(item => {
+        if (!groupedByCategory[item.category]) {
+          groupedByCategory[item.category] = [];
+        }
+        groupedByCategory[item.category].push(item);
+      });
+      
+      // Sort categories
+      const categories = Object.keys(groupedByCategory).sort();
+      
+      let html = '';
+      categories.forEach(category => {
+        const items = groupedByCategory[category];
+        html += `
+          <div class="category-section">
+            <div class="category-title">
+              <span>${category}</span>
+              <span class="category-count">${items.length} item${items.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="category-items">
+        `;
+        
+        items.forEach(item => {
+          const statusClass = item.status === 'Available' ? 'status-available' : 
+                             item.status === 'Low Stock' ? 'status-low' : 'status-out';
+          html += `
+            <div class="inventory-card">
+              <div class="card-field">
+                <div class="card-label">Product Name</div>
+                <div class="card-value product-name">${item.product}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Batch / Expiry</div>
+                <div class="card-value">${item.batch}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Quantity</div>
+                <div class="card-value">${item.qty}</div>
+              </div>
+              <div class="card-field">
+                <div class="card-label">Status</div>
+                <div class="status-badge ${statusClass}">${item.status}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      inventoryBody.innerHTML = html;
+    }
+
+    // Initialize
+    monthSelect.value = currentMonth;
+    yearInput.value = currentYear;
+    renderCalendar();
+    updateDashboardOverview();
+    updateDashboardData('today');
+  </script>
+</body>
+</html>
